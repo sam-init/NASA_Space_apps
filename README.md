@@ -75,15 +75,15 @@ ExoPlanet AI is an innovative web application that harnesses the power of artifi
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/your-team/exoplanet-ai.git
-cd exoplanet-ai
+git clone https://github.com/sam-init/NASA_Space_apps.git
+cd NASA_Space_apps
 ```
 
 ### 2. Frontend Setup
 ```bash
 cd frontend
 npm install
-cp .env.example .env
+copy .env.example .env
 npm start
 ```
 
