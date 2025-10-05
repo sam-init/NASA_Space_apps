@@ -5,17 +5,28 @@ NASA Space Apps Challenge 2025 - Team BrainRot
 Main Flask application with CORS support for React frontend integration.
 """
 
+import os
+import logging
+from datetime import datetime
 from flask import Flask, jsonify
 from flask_cors import CORS
-import logging
-import os
-from datetime import datetime
+
+# Import API blueprint
+from api.endpoints import api_bp
+
+# Import production optimizations
+try:
+    from performance.optimizer import optimize_for_production, PerformanceMiddleware
+    from monitoring.logger import setup_flask_logging, nasa_logger
+    PRODUCTION_FEATURES = True
+except ImportError:
+    PRODUCTION_FEATURES = False
+    print("Warning: Production features not available")
 
 def create_app():
     """Create and configure Flask application."""
     
     app = Flask(__name__)
-    
     # Configuration
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'nasa-space-apps-2025-brainrot')
     app.config['UPLOAD_FOLDER'] = 'data/uploads'
@@ -31,11 +42,24 @@ def create_app():
     # Create upload directory
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
-    # Logging configuration
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    )
+    # Production optimizations
+    if PRODUCTION_FEATURES:
+        # Set up production logging and monitoring
+        setup_flask_logging(app)
+        
+        # Add performance middleware
+        PerformanceMiddleware(app)
+        
+        # Apply production optimizations
+        optimize_for_production()
+        
+        nasa_logger.logger.info("Production features enabled")
+    else:
+        # Basic logging configuration for development
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
     
     # Register blueprints
     try:
