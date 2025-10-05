@@ -132,13 +132,16 @@ const DataUpload = () => {
       setAnalysisResults({
         exoplanetDetected: analysisData.exoplanet_detected,
         confidence: analysisData.confidence,
-        transitDepth: analysisData.transit_parameters?.transit_depth_ppm / 10000 || 0.001,
+        // Store as fraction (0..1). ppm -> fraction = ppm / 1,000,000
+        transitDepth: ((analysisData.transit_parameters?.transit_depth_ppm || 0) / 1000000),
         period: analysisData.transit_parameters?.orbital_period_days || 0,
         duration: analysisData.transit_parameters?.transit_duration_hours || 0,
         planetType: analysisData.transit_parameters?.planet_type || 'Unknown',
         habitableZone: analysisData.transit_parameters?.habitable_zone || false,
         processingTime: analysisData.processing_time || 0,
-        featureImportance: analysisData.feature_importance || {}
+        featureImportance: analysisData.feature_importance || {},
+        analysisId: analysisData.analysis_id,
+        rawData: analysisData
       });
       
     } catch (error) {
@@ -155,6 +158,82 @@ const DataUpload = () => {
     } finally {
       setUploading(false);
     }
+  };
+
+  const downloadReport = () => {
+    if (!analysisResults) return;
+    
+    const reportData = {
+      timestamp: new Date().toISOString(),
+      analysis: {
+        exoplanet_detected: analysisResults.exoplanetDetected,
+        confidence: analysisResults.confidence,
+        planet_type: analysisResults.planetType,
+        habitable_zone: analysisResults.habitableZone
+      },
+      transit_parameters: {
+        orbital_period_days: analysisResults.period,
+        transit_depth_percent: (analysisResults.transitDepth * 100).toFixed(3),
+        transit_duration_hours: analysisResults.duration
+      },
+      feature_importance: analysisResults.featureImportance,
+      processing_time: analysisResults.processingTime,
+      model_used: "NASA Exoplanet Pipeline"
+    };
+    
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `exoplanet_analysis_report_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadSampleDataset = (dataset) => {
+    // Create sample data based on the dataset type
+    let csvContent = '';
+    
+    if (dataset.name.includes('Kepler')) {
+      csvContent = `koi_fpflag_nt,koi_fpflag_co,koi_fpflag_ss,koi_fpflag_ec,koi_prad,koi_disposition
+0,0,0,0,1.2,CONFIRMED
+1,0,0,0,2.5,FALSE POSITIVE
+0,1,0,0,0.8,CONFIRMED
+0,0,1,0,3.1,CANDIDATE
+0,0,0,1,1.0,FALSE POSITIVE
+0,0,0,0,0.9,CONFIRMED
+1,1,0,0,4.2,FALSE POSITIVE
+0,0,0,0,1.5,CONFIRMED`;
+    } else if (dataset.name.includes('TESS')) {
+      csvContent = `time,flux,flux_err
+0.0,1.0000,0.0001
+0.1,0.9999,0.0001
+0.2,0.9995,0.0001
+0.3,0.9998,0.0001
+0.4,0.9997,0.0001
+0.5,0.9999,0.0001
+0.6,1.0001,0.0001
+0.7,1.0000,0.0001`;
+    } else {
+      csvContent = `koi_fpflag_nt,koi_fpflag_co,koi_fpflag_ss,koi_fpflag_ec,koi_prad
+0,0,0,0,1.1
+0,0,0,0,0.83
+1,0,0,0,2.4
+0,1,0,0,1.6
+0,0,0,0,1.04`;
+    }
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${dataset.name.toLowerCase().replace(/\s+/g, '_')}_sample.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -337,7 +416,10 @@ const DataUpload = () => {
                   </div>
                   
                   <div className="flex flex-col space-y-3">
-                    <button className="btn-primary">
+                    <button 
+                      onClick={downloadReport}
+                      className="btn-primary"
+                    >
                       <Download className="mr-2 h-4 w-4" />
                       Download Report
                     </button>
@@ -374,6 +456,7 @@ const DataUpload = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 * index }}
+                    onClick={() => downloadSampleDataset(dataset)}
                     className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors duration-300 cursor-pointer group"
                   >
                     <h4 className="font-semibold text-white mb-2 group-hover:text-space-300 transition-colors duration-300">

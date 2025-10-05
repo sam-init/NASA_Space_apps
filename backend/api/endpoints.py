@@ -745,7 +745,22 @@ def load_and_extract_features(file_path: str) -> pd.DataFrame:
         file_extension = file_path.split('.')[-1].lower()
         
         if file_extension == 'csv':
-            df = pd.read_csv(file_path)
+            # Try to read NASA CSVs that may include header comment lines starting with '#'
+            df = None
+            try:
+                df = pd.read_csv(file_path, comment='#', low_memory=False)
+            except Exception:
+                df = pd.read_csv(file_path, low_memory=False)
+            
+            # If koi_* columns are still missing, try skipping initial commented lines manually
+            if not any(col.startswith('koi_') for col in df.columns):
+                try:
+                    with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        lines = [ln for ln in f if not ln.lstrip().startswith('#')]
+                    from io import StringIO
+                    df = pd.read_csv(StringIO(''.join(lines)), low_memory=False)
+                except Exception:
+                    pass
             
             # Check if it's NASA KOI format
             nasa_features = ['koi_fpflag_nt', 'koi_fpflag_co', 'koi_fpflag_ss', 'koi_fpflag_ec', 'koi_prad']
@@ -753,7 +768,10 @@ def load_and_extract_features(file_path: str) -> pd.DataFrame:
             
             if available_features:
                 # Use NASA KOI features
-                features_df = df[available_features].iloc[[0]]  # Take first row
+                # Keep core NASA features plus transit-related context columns if present
+                context_cols = ['koi_period', 'koi_depth', 'koi_duration', 'koi_teq', 'koi_sma']
+                keep_cols = list(available_features) + [c for c in context_cols if c in df.columns]
+                features_df = df[keep_cols].iloc[[0]]  # Take first row with extra context
                 
                 # Fill missing values
                 for col in nasa_features:
@@ -763,7 +781,8 @@ def load_and_extract_features(file_path: str) -> pd.DataFrame:
                         else:
                             features_df[col] = 1.0  # Default value
                 
-                return features_df[nasa_features]
+                # Return the row including extra context so downstream can use real transit params
+                return features_df
             
             else:
                 # Extract statistical features from time series
@@ -836,7 +855,10 @@ def extract_relevant_features(df: pd.DataFrame) -> pd.DataFrame:
     available_features = [col for col in nasa_features if col in df.columns]
     
     if available_features:
-        features_df = df[available_features].iloc[[0]]
+        # Keep KOI features plus any transit-related columns for richer context
+        context_cols = ['koi_period', 'koi_depth', 'koi_duration', 'koi_teq', 'koi_sma']
+        keep_cols = list(available_features) + [c for c in context_cols if c in df.columns]
+        features_df = df[keep_cols].iloc[[0]]
         
         # Fill missing NASA features
         for col in nasa_features:
@@ -846,7 +868,7 @@ def extract_relevant_features(df: pd.DataFrame) -> pd.DataFrame:
                 else:
                     features_df[col] = 1.0
         
-        return features_df[nasa_features]
+        return features_df
     
     else:
         return create_mock_features()
@@ -863,15 +885,15 @@ def create_mock_features() -> pd.DataFrame:
 
 def generate_transit_parameters(features_df: pd.DataFrame, exoplanet_detected: bool, confidence: float) -> Dict[str, Any]:
     """
-    Generate transit parameters based on features and detection result.
+    Extract real transit parameters from NASA KOI dataset or generate realistic ones.
     
     Args:
-        features_df: Input features
+        features_df: Input features from NASA dataset
         exoplanet_detected: Whether exoplanet was detected
         confidence: Detection confidence
         
     Returns:
-        Dictionary of transit parameters
+        Dictionary of transit parameters using real NASA data
     """
     if not exoplanet_detected:
         return {
@@ -881,45 +903,89 @@ def generate_transit_parameters(features_df: pd.DataFrame, exoplanet_detected: b
             'planet_radius_earth_radii': None,
             'equilibrium_temperature_k': None,
             'semi_major_axis_au': None,
-            'detection_significance': 0.0
+            'detection_significance': 0.0,
+            'habitable_zone': False,
+            'planet_type': 'Unknown'
         }
     
-    # Extract planet radius if available
-    planet_radius = features_df.get('koi_prad', pd.Series([1.0])).iloc[0]
+    # Extract real NASA KOI parameters if available
+    orbital_period = None
+    transit_depth = None
+    transit_duration = None
+    planet_radius = None
+    equilibrium_temp = None
+    semi_major_axis = None
     
-    # Generate realistic transit parameters based on planet radius and confidence
-    import random
-    import hashlib
+    # Try to extract real NASA data first
+    if 'koi_period' in features_df.columns:
+        orbital_period = features_df['koi_period'].iloc[0]
     
-    # Create a consistent seed based on planet radius for reproducible results
-    seed_string = f"{planet_radius:.3f}"
-    seed_hash = int(hashlib.md5(seed_string.encode()).hexdigest()[:8], 16)
-    random.seed(seed_hash)  # Consistent seed based on input data
+    if 'koi_depth' in features_df.columns:
+        transit_depth = features_df['koi_depth'].iloc[0]
+        
+    if 'koi_duration' in features_df.columns:
+        transit_duration = features_df['koi_duration'].iloc[0]
+        
+    if 'koi_prad' in features_df.columns:
+        planet_radius = features_df['koi_prad'].iloc[0]
+        
+    if 'koi_teq' in features_df.columns:
+        equilibrium_temp = features_df['koi_teq'].iloc[0]
+        
+    if 'koi_sma' in features_df.columns:
+        semi_major_axis = features_df['koi_sma'].iloc[0]
     
-    # Scale parameters based on planet size
-    if planet_radius < 1.25:  # Earth-like
-        period_range = (20, 400)
-        depth_range = (50, 500)
-        duration_range = (2, 8)
-        temp_range = (200, 400)
-    elif planet_radius < 2.0:  # Super-Earth
-        period_range = (10, 200)
-        depth_range = (100, 1000)
-        duration_range = (3, 10)
-        temp_range = (300, 600)
-    else:  # Larger planets
-        period_range = (1, 100)
-        depth_range = (500, 5000)
-        duration_range = (4, 15)
-        temp_range = (400, 1000)
+    # If we don't have real data, use planet radius to make realistic estimates
+    if planet_radius is None:
+        planet_radius = 1.0  # Default Earth-like
     
-    orbital_period = random.uniform(*period_range)
-    transit_depth = random.uniform(*depth_range)
-    transit_duration = random.uniform(*duration_range)
-    equilibrium_temp = random.uniform(*temp_range)
+    # Fill in missing parameters with physics-based estimates
+    if orbital_period is None:
+        # Estimate based on planet type
+        if planet_radius < 1.25:  # Earth-like
+            orbital_period = np.random.uniform(20, 400)
+        elif planet_radius < 2.0:  # Super-Earth
+            orbital_period = np.random.uniform(10, 200)
+        else:  # Larger planets
+            orbital_period = np.random.uniform(1, 100)
     
-    # Calculate semi-major axis (simplified)
-    semi_major_axis = (orbital_period / 365.25) ** (2/3)
+    if transit_depth is None:
+        # Transit depth scales roughly with (planet_radius/star_radius)^2
+        # Typical values for KOI data range from 100-10000 ppm
+        if planet_radius < 1.25:
+            transit_depth = np.random.uniform(100, 1000)
+        elif planet_radius < 2.0:
+            transit_depth = np.random.uniform(500, 3000)
+        else:
+            transit_depth = np.random.uniform(1000, 10000)
+    
+    if transit_duration is None:
+        # Duration typically 2-12 hours for most transits
+        if planet_radius < 1.25:
+            transit_duration = np.random.uniform(2, 8)
+        else:
+            transit_duration = np.random.uniform(3, 12)
+    
+    if equilibrium_temp is None:
+        # Estimate from orbital period (closer = hotter)
+        if orbital_period < 10:
+            equilibrium_temp = np.random.uniform(800, 1500)
+        elif orbital_period < 100:
+            equilibrium_temp = np.random.uniform(400, 800)
+        else:
+            equilibrium_temp = np.random.uniform(200, 600)
+    
+    if semi_major_axis is None:
+        # Kepler's third law approximation (assuming solar-mass star)
+        semi_major_axis = (orbital_period / 365.25) ** (2/3)
+    
+    # Ensure all values are valid numbers
+    orbital_period = float(orbital_period) if orbital_period is not None and not pd.isna(orbital_period) else 50.0
+    transit_depth = float(transit_depth) if transit_depth is not None and not pd.isna(transit_depth) else 1000.0
+    transit_duration = float(transit_duration) if transit_duration is not None and not pd.isna(transit_duration) else 4.0
+    planet_radius = float(planet_radius) if planet_radius is not None and not pd.isna(planet_radius) else 1.0
+    equilibrium_temp = float(equilibrium_temp) if equilibrium_temp is not None and not pd.isna(equilibrium_temp) else 300.0
+    semi_major_axis = float(semi_major_axis) if semi_major_axis is not None and not pd.isna(semi_major_axis) else 0.1
     
     return {
         'orbital_period_days': round(orbital_period, 2),
@@ -928,7 +994,7 @@ def generate_transit_parameters(features_df: pd.DataFrame, exoplanet_detected: b
         'planet_radius_earth_radii': round(planet_radius, 3),
         'equilibrium_temperature_k': round(equilibrium_temp, 1),
         'semi_major_axis_au': round(semi_major_axis, 4),
-        'detection_significance': round(confidence / 10, 2),  # Convert to sigma-like value
+        'detection_significance': round(confidence / 10, 2),
         'habitable_zone': 200 <= equilibrium_temp <= 400,
         'planet_type': classify_planet_type(planet_radius)
     }
