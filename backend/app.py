@@ -21,8 +21,12 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = 'data/uploads'
     app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
     
-    # Enable CORS for React frontend
-    CORS(app, origins=['http://localhost:3000', 'http://127.0.0.1:3000'])
+    # Enhanced CORS configuration for React integration
+    CORS(app, 
+         origins=['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001'],
+         methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+         allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
+         supports_credentials=True)
     
     # Create upload directory
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
