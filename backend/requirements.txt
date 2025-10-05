@@ -12,6 +12,8 @@ tensorflow
 keras
 astropy
 lightkurve
+imbalanced-learn
+
 
 # Data Processing
 scipy
