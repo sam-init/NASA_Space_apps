@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="AI-powered exoplanet detection using NASA datasets. Discover new worlds beyond our solar system with cutting-edge machine learning technology." />
+    <meta name="keywords" content="exoplanet, NASA, AI, machine learning, space, astronomy, Kepler, TESS, K2" />
+    <meta name="author" content="Team BrainRot - NASA Space Apps Challenge 2025" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://exoplanet-ai.netlify.app/" />
+    <meta property="og:title" content="ExoPlanet AI - Discover Exoplanets with AI" />
+    <meta property="og:description" content="Harness the power of artificial intelligence to analyze NASA's exoplanet data and uncover new worlds beyond our solar system." />
+    <meta property="og:image" content="%PUBLIC_URL%/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://exoplanet-ai.netlify.app/" />
+    <meta property="twitter:title" content="ExoPlanet AI - Discover Exoplanets with AI" />
+    <meta property="twitter:description" content="Harness the power of artificial intelligence to analyze NASA's exoplanet data and uncover new worlds beyond our solar system." />
+    <meta property="twitter:image" content="%PUBLIC_URL%/og-image.png" />
+
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <!-- Preconnect to external domains for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
+    <!-- Favicon variations -->
+    <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg">
+    <link rel="icon" type="image/png" href="%PUBLIC_URL%/favicon.png">
+    
+    <title>ExoPlanet AI - Discover Exoplanets with AI | NASA Space Apps Challenge</title>
+    
+    <!-- Structured Data for SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ExoPlanet AI",
+      "description": "AI-powered exoplanet detection using NASA datasets",
+      "url": "https://exoplanet-ai.netlify.app/",
+      "applicationCategory": "ScienceApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "Team BrainRot",
+        "description": "NASA Space Apps Challenge 2025 Participants"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    
+    <!-- Loading screen styles -->
+    <style>
+      #root {
+        background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+        min-height: 100vh;
+      }
+      
+      /* Loading animation */
+      .loading-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+      }
+      
+      .loading-spinner {
+        width: 50px;
+        height: 50px;
+        border: 3px solid rgba(99, 102, 241, 0.3);
+        border-top: 3px solid #6366f1;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    
+    <!-- Initial loading screen -->
+    <div id="loading-screen" class="loading-container">
+      <div>
+        <div class="loading-spinner"></div>
+        <p style="color: white; margin-top: 20px; font-family: 'Inter', sans-serif;">Loading ExoPlanet AI...</p>
+      </div>
+    </div>
+    
+    <script>
+      // Hide loading screen when React app loads
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(function() {
+              loadingScreen.remove();
+            }, 500);
+          }
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>

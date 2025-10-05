@@ -1,0 +1,43 @@
+MIT License
+
+Copyright (c) 2025 Team BrainRot - NASA Space Apps Challenge
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+## Additional Acknowledgments
+
+This project was created for the NASA International Space Apps Challenge 2025.
+We acknowledge and thank:
+
+- NASA for providing open-source exoplanet datasets from the Kepler, TESS, and K2 missions
+- The Space Apps Challenge organizers for creating this incredible opportunity
+- The Kepler, TESS, and K2 mission teams for their groundbreaking work in exoplanet discovery
+- The open-source community for the amazing tools and libraries that made this project possible
+- ReactBits for the beautiful galaxy background component used in our design
+
+## Data Attribution
+
+This project uses data from:
+- NASA Kepler Mission: https://www.nasa.gov/kepler
+- NASA TESS Mission: https://www.nasa.gov/tess-transiting-exoplanet-survey-satellite
+- NASA K2 Mission: https://www.nasa.gov/feature/ames/kepler/nasas-k2-mission-the-kepler-space-telescopes-second-chance-to-shine
+
+All NASA data is in the public domain and is used in accordance with NASA's data policy.
