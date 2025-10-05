@@ -88,17 +88,73 @@ const DataUpload = () => {
     
     setUploading(true);
     
-    // Simulate analysis process
-    setTimeout(() => {
-      setAnalysisResults({
-        exoplanetDetected: Math.random() > 0.5,
-        confidence: Math.random() * 30 + 70,
-        transitDepth: Math.random() * 0.02 + 0.001,
-        period: Math.random() * 50 + 1,
-        duration: Math.random() * 10 + 2
+    try {
+      // First upload the file
+      const file = files[0].file;
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const uploadResponse = await fetch('http://localhost:5000/api/upload', {
+        method: 'POST',
+        body: formData,
       });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
+      }
+      
+      const uploadData = await uploadResponse.json();
+      const fileId = uploadData.file_id;
+      
+      // Then analyze the uploaded file
+      const analysisResponse = await fetch('http://localhost:5000/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_id: fileId,
+          analysis_options: {
+            model_type: 'nasa_pipeline',
+            confidence_threshold: 0.5,
+            include_feature_importance: true
+          }
+        }),
+      });
+      
+      if (!analysisResponse.ok) {
+        throw new Error('Analysis failed');
+      }
+      
+      const analysisData = await analysisResponse.json();
+      
+      // Convert backend response to frontend format
+      setAnalysisResults({
+        exoplanetDetected: analysisData.exoplanet_detected,
+        confidence: analysisData.confidence,
+        transitDepth: analysisData.transit_parameters?.transit_depth_ppm / 10000 || 0.001,
+        period: analysisData.transit_parameters?.orbital_period_days || 0,
+        duration: analysisData.transit_parameters?.transit_duration_hours || 0,
+        planetType: analysisData.transit_parameters?.planet_type || 'Unknown',
+        habitableZone: analysisData.transit_parameters?.habitable_zone || false,
+        processingTime: analysisData.processing_time || 0,
+        featureImportance: analysisData.feature_importance || {}
+      });
+      
+    } catch (error) {
+      console.error('Analysis error:', error);
+      // Fallback to mock data if API fails
+      setAnalysisResults({
+        exoplanetDetected: false,
+        confidence: 0,
+        transitDepth: 0,
+        period: 0,
+        duration: 0,
+        error: error.message
+      });
+    } finally {
       setUploading(false);
-    }, 3000);
+    }
   };
 
   return (

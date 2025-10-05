@@ -1,0 +1,6 @@
+koi_fpflag_nt,koi_fpflag_co,koi_fpflag_ss,koi_fpflag_ec,koi_prad,koi_disposition
+0,0,0,0,1.2,CONFIRMED
+1,0,0,1,2.5,FALSE POSITIVE
+0,1,0,0,0.8,CONFIRMED
+0,0,0,0,3.1,CANDIDATE
+1,0,1,0,1.0,FALSE POSITIVE

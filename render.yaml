@@ -1,0 +1,64 @@
+# Render deployment configuration
+# NASA Space Apps Challenge 2025 - Team BrainRot
+
+services:
+  # Backend API Service
+  - type: web
+    name: nasa-exoplanet-api
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: |
+      cd backend &&
+      pip install --upgrade pip &&
+      pip install -r requirements.txt
+    startCommand: |
+      cd backend &&
+      gunicorn --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120 app:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: app.py
+      - key: PYTHONPATH
+        value: /opt/render/project/src/backend
+      - key: LOG_LEVEL
+        value: INFO
+      - key: PORT
+        generateValue: true
+    healthCheckPath: /health
+    disk:
+      name: nasa-data
+      mountPath: /opt/render/project/src/backend/data
+      sizeGB: 1
+
+  # Frontend Service
+  - type: web
+    name: nasa-exoplanet-frontend
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: |
+      cd frontend &&
+      npm ci &&
+      npm run build
+    startCommand: |
+      cd frontend &&
+      npm start
+    envVars:
+      - key: REACT_APP_API_URL
+        fromService:
+          type: web
+          name: nasa-exoplanet-api
+          property: host
+      - key: REACT_APP_ENV
+        value: production
+      - key: NODE_ENV
+        value: production
+
+databases:
+  # Optional: PostgreSQL for storing analysis results
+  - name: nasa-postgres
+    plan: starter
+    region: oregon
+    postgresMajorVersion: 15
